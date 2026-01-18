@@ -12,7 +12,8 @@ export default function Products() {
   const [form, setForm] = useState({
     id: null,
     name: "",
-    price: "",
+    unit: "",
+    min_stock: "",
     stock: "",
     category_id: "",
   });
@@ -56,7 +57,8 @@ export default function Products() {
     setForm({
       id: p.id,
       name: p.name,
-      price: p.price,
+      unit: p.unit,
+      min_stock: p.min_stock,
       stock: p.stock,
       category_id: p.category_id,
     });
@@ -84,7 +86,7 @@ export default function Products() {
         <thead>
           <tr className="border-b">
             <th className="p-2 text-left">Nama</th>
-            <th className="p-2">Harga</th>
+            <th className="p-2">Minimal Stock</th>
             <th className="p-2">Stock</th>
             <th className="p-2">Kategori</th>
             <th className="p-2">Dibuat oleh</th>
@@ -96,8 +98,12 @@ export default function Products() {
           {products.map((p) => (
             <tr key={p.id} className="border-b">
               <td className="p-2">{p.name}</td>
-              <td className="p-2">Rp {p.price}</td>
-              <td className="p-2">{p.stock}</td>
+              <td className="p-2">
+                {p.min_stock} {p.unit}
+              </td>
+              <td className="p-2">
+                {p.stock} {p.unit}
+              </td>
               <td className="p-2">{p.category}</td>
               <td className="p-2">{p.created_by}</td>
               <td className="p-2">
