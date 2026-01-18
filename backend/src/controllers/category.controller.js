@@ -15,7 +15,7 @@ export const createCategory = async (req, res) => {
   try {
     const [existing] = await pool.query(
       "SELECT id FROM categories WHERE name = ?",
-      [name]
+      [name],
     );
 
     if (existing.length > 0) {
@@ -26,7 +26,7 @@ export const createCategory = async (req, res) => {
 
     const [result] = await pool.query(
       "INSERT INTO categories (name) VALUES (?)",
-      [name]
+      [name],
     );
 
     res.status(201).json({
@@ -47,7 +47,7 @@ export const createCategory = async (req, res) => {
 export const getCategories = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, name FROM categories ORDER BY name ASC"
+      "SELECT id, name FROM categories ORDER BY name ASC",
     );
 
     res.json(rows);
@@ -76,7 +76,7 @@ export const updateCategory = async (req, res) => {
     // cek category exist
     const [existing] = await pool.query(
       "SELECT id FROM categories WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (existing.length === 0) {
@@ -88,7 +88,7 @@ export const updateCategory = async (req, res) => {
     // cek duplicate name (kecuali dirinya sendiri)
     const [duplicate] = await pool.query(
       "SELECT id FROM categories WHERE name = ? AND id != ?",
-      [name, id]
+      [name, id],
     );
 
     if (duplicate.length > 0) {
@@ -120,7 +120,7 @@ export const deleteCategory = async (req, res) => {
     // cek category exist
     const [existing] = await pool.query(
       "SELECT id FROM categories WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (existing.length === 0) {
@@ -133,7 +133,7 @@ export const deleteCategory = async (req, res) => {
     // cek apakah masih dipakai product
     const [used] = await pool.query(
       "SELECT id FROM products WHERE category_id = ? LIMIT 1",
-      [id]
+      [id],
     );
 
     if (used.length > 0) {
@@ -165,7 +165,7 @@ export const getCategoryProducts = async (req, res) => {
     // cek category exist
     const [category] = await pool.query(
       "SELECT id, name FROM categories WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (category.length === 0) {
@@ -177,19 +177,20 @@ export const getCategoryProducts = async (req, res) => {
     // ambil products
     const [products] = await pool.query(
       `
-      SELECT
-        p.id,
-        p.name,
-        p.price,
-        p.stock,
-        p.created_at,
-        a.name AS created_by
-      FROM products p
-      JOIN admins a ON p.created_by = a.id
-      WHERE p.category_id = ?
-      ORDER BY p.created_at DESC
-    `,
-      [id]
+  SELECT
+    p.id,
+    p.name,
+    p.stock,
+    p.unit,
+    p.min_stock,
+    p.created_at,
+    a.name AS created_by
+  FROM products p
+  JOIN admins a ON p.created_by = a.id
+  WHERE p.category_id = ?
+  ORDER BY p.created_at DESC
+`,
+      [id],
     );
 
     res.json({

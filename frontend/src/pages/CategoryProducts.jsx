@@ -28,7 +28,6 @@ export default function CategoryProducts() {
           <thead>
             <tr className="bg-gray-100">
               <th className="border p-2">Nama</th>
-              <th className="border p-2">Harga</th>
               <th className="border p-2">Stock</th>
               <th className="border p-2">Created At</th>
             </tr>
@@ -37,8 +36,9 @@ export default function CategoryProducts() {
             {products.map((p) => (
               <tr key={p.id}>
                 <td className="border p-2">{p.name}</td>
-                <td className="border p-2">{p.price}</td>
-                <td className="border p-2">{p.stock}</td>
+                <td className="border p-2">
+                  {p.stock} {p.unit}
+                </td>
                 <td className="border p-2">
                   {new Date(p.created_at).toLocaleDateString()}
                 </td>
