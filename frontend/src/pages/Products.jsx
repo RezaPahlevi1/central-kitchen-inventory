@@ -149,9 +149,11 @@ export default function Products() {
               <input
                 type="number"
                 className="border p-2 w-full"
-                placeholder="Harga"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                placeholder="Minimal Stock"
+                value={form.min_stock}
+                onChange={(e) =>
+                  setForm({ ...form, min_stock: e.target.value })
+                }
               />
 
               <input
