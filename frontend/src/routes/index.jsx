@@ -26,6 +26,10 @@ const router = createBrowserRouter([
     path: "/categories/:id",
     element: <CategoryProducts />,
   },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+  },
 ]);
 
 export default router;

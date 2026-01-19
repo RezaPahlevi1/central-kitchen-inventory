@@ -12,7 +12,7 @@ export const createProduct = async (req, res) => {
 
   try {
     const [[admin]] = await pool.query(
-      `SELECT id FROM admins WHERE role = 'superadmin' AND is_active = 1 LIMIT 1`
+      `SELECT id FROM admins WHERE role = 'superadmin' AND is_active = 1 LIMIT 1`,
     );
 
     if (!admin) {
@@ -23,7 +23,7 @@ export const createProduct = async (req, res) => {
       `INSERT INTO products 
         (name, unit, min_stock, stock, category_id, created_by)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, unit, min_stock || 0, stock, category_id, admin.id]
+      [name, unit, min_stock || 0, stock, category_id, admin.id],
     );
 
     res.status(201).json({
@@ -81,7 +81,7 @@ export const updateProduct = async (req, res) => {
       `UPDATE products 
        SET name = ?, unit = ?, min_stock = ?, stock = ?, category_id = ?
        WHERE id = ?`,
-      [name, unit, min_stock || 0, stock, category_id, id]
+      [name, unit, min_stock || 0, stock, category_id, id],
     );
 
     if (result.affectedRows === 0) {
