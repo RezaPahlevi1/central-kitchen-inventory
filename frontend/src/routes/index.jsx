@@ -1,9 +1,10 @@
 import { createBrowserRouter } from "react-router-dom";
 import CreateProduct from "../pages/CreateProduct";
-import Products from "../pages/products";
+import Products from "../pages/Products";
 import Categories from "../pages/Categories";
 import CategoryProducts from "../pages/CategoryProducts";
 import Dashboard from "../pages/Dashboard";
+import TransferStock from "../pages/TransferStock";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <Dashboard />,
+  },
+  {
+    path: "/stock-movements/transfer",
+    element: <TransferStock />,
   },
 ]);
 
