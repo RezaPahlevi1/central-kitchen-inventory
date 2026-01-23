@@ -57,3 +57,38 @@ export const transferStock = async (req, res) => {
     if (conn) conn.release();
   }
 };
+
+export const getStockMovements = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        sm.id,
+        sm.qty,
+        sm.direction,
+        sm.movement_type,
+        sm.note,
+        sm.created_at,
+
+        p.id AS product_id,
+        p.name AS product_name,
+        p.unit,
+
+        o.id AS outlet_id,
+        o.name AS outlet_name,
+
+        a.name AS created_by
+      FROM stock_movements sm
+      JOIN products p ON sm.product_id = p.id
+      LEFT JOIN outlets o ON sm.outlet_id = o.id
+      JOIN admins a ON sm.created_by = a.id
+      ORDER BY sm.created_at DESC
+    `);
+
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch stock movements",
+    });
+  }
+};

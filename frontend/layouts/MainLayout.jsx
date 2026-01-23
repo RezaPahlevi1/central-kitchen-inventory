@@ -29,6 +29,10 @@ export default function MainLayout() {
             Categories
           </NavLink>
 
+          <NavLink to="/stock-movements" className={linkClass}>
+            Stock Movements
+          </NavLink>
+
           <NavLink to="/stock-movements/transfer" className={linkClass}>
             Transfer Stock
           </NavLink>
