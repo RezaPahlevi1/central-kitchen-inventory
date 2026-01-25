@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { recordStockMovement } from "../../services/stock.service.js";
 
 /**
  * POST /api/products
@@ -6,33 +7,52 @@ import pool from "../config/db.js";
 export const createProduct = async (req, res) => {
   const { name, unit, min_stock, stock, category_id } = req.body;
 
-  if (!name || !unit || stock === undefined || !category_id) {
-    return res.status(400).json({ message: "Required fields are missing" });
-  }
+  let conn;
 
   try {
-    const [[admin]] = await pool.query(
-      `SELECT id FROM admins WHERE role = 'superadmin' AND is_active = 1 LIMIT 1`,
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [[admin]] = await conn.query(
+      `SELECT id FROM admins 
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
     );
 
-    if (!admin) {
-      return res.status(404).json({ message: "Superadmin not found" });
+    if (!admin) throw new Error("Superadmin not found");
+
+    const [result] = await conn.query(
+      `INSERT INTO products 
+       (name, unit, min_stock, stock, category_id, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, unit, min_stock || 0, 0, category_id, admin.id],
+    );
+
+    const product_id = result.insertId;
+
+    // LOG STOCK MASUK
+    if (stock > 0) {
+      await recordStockMovement({
+        conn,
+        product_id,
+        qty: stock,
+        direction: "IN",
+        movement_type: "INITIAL",
+        admin_id: admin.id,
+        note: "Initial stock",
+      });
     }
 
-    const [result] = await pool.query(
-      `INSERT INTO products 
-        (name, unit, min_stock, stock, category_id, created_by)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, unit, min_stock || 0, stock, category_id, admin.id],
-    );
+    await conn.commit();
 
     res.status(201).json({
-      message: "Product created successfully",
-      product_id: result.insertId,
+      message: "Product created",
+      product_id,
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to create product" });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    if (conn) conn.release();
   }
 };
 
@@ -72,26 +92,52 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const { name, unit, min_stock, stock, category_id } = req.body;
 
-  if (!name || !unit || stock === undefined || !category_id) {
-    return res.status(400).json({ message: "Required fields are missing" });
-  }
+  let conn;
 
   try {
-    const [result] = await pool.query(
-      `UPDATE products 
-       SET name = ?, unit = ?, min_stock = ?, stock = ?, category_id = ?
-       WHERE id = ?`,
-      [name, unit, min_stock || 0, stock, category_id, id],
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [[admin]] = await conn.query(
+      `SELECT id FROM admins 
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Product not found" });
+    const [[oldProduct]] = await conn.query(
+      `SELECT stock FROM products WHERE id=? FOR UPDATE`,
+      [id],
+    );
+
+    if (!oldProduct) throw new Error("Product not found");
+
+    await conn.query(
+      `UPDATE products 
+       SET name=?, unit=?, min_stock=?, category_id=?
+       WHERE id=?`,
+      [name, unit, min_stock || 0, category_id, id],
+    );
+
+    const diff = stock - oldProduct.stock;
+
+    if (diff !== 0) {
+      await recordStockMovement({
+        conn,
+        product_id: id,
+        qty: Math.abs(diff),
+        direction: diff > 0 ? "IN" : "OUT",
+        movement_type: "ADJUSTMENT",
+        admin_id: admin.id,
+        note: "Manual stock adjustment",
+      });
     }
 
-    res.json({ message: "Product updated successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to update product" });
+    await conn.commit();
+    res.json({ message: "Product updated" });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    if (conn) conn.release();
   }
 };
 
@@ -101,18 +147,45 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
 
-  try {
-    const [result] = await pool.query(`DELETE FROM products WHERE id = ?`, [
-      id,
-    ]);
+  let conn;
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Product not found" });
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const [[admin]] = await conn.query(
+      `SELECT id FROM admins 
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
+    );
+
+    const [[product]] = await conn.query(
+      `SELECT stock FROM products WHERE id=? FOR UPDATE`,
+      [id],
+    );
+
+    if (!product) throw new Error("Product not found");
+
+    if (product.stock > 0) {
+      await recordStockMovement({
+        conn,
+        product_id: id,
+        qty: product.stock,
+        direction: "OUT",
+        movement_type: "WASTE",
+        admin_id: admin.id,
+        note: "Product deleted",
+      });
     }
 
-    res.json({ message: "Product deleted successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to delete product" });
+    await conn.query(`DELETE FROM products WHERE id=?`, [id]);
+
+    await conn.commit();
+    res.json({ message: "Product deleted" });
+  } catch (err) {
+    console.error("DELETE PRODUCT ERROR:", err);
+    if (conn) await conn.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    if (conn) conn.release();
   }
 };

@@ -4,69 +4,35 @@ import pool from "../config/db.js";
  * POST /api/products
  */
 export const createProduct = async (req, res) => {
-  const { name, price, stock, category_id, company_ids } = req.body;
+  const { name, unit, min_stock, stock, category_id } = req.body;
 
-  // basic validation
-  if (
-    !name ||
-    price === undefined ||
-    stock === undefined ||
-    category_id === undefined
-  ) {
-    return res.status(400).json({
-      message: "Required fields are missing",
-    });
+  if (!name || !unit || stock === undefined || !category_id) {
+    return res.status(400).json({ message: "Required fields are missing" });
   }
 
-  const conn = await pool.getConnection();
-
   try {
-    await conn.beginTransaction();
-
-    const [[admin]] = await conn.query(
-      `SELECT id FROM admins WHERE role = 'superadmin' AND is_active = 1 LIMIT 1`
+    const [[admin]] = await pool.query(
+      `SELECT id FROM admins WHERE role = 'superadmin' AND is_active = 1 LIMIT 1`,
     );
 
     if (!admin) {
-      throw new Error("Superadmin not found");
+      return res.status(404).json({ message: "Superadmin not found" });
     }
 
-    // 2️⃣ insert product
-    const [result] = await conn.query(
+    const [result] = await pool.query(
       `INSERT INTO products 
-        (name, price, stock, category_id, created_by)
-       VALUES (?, ?, ?, ?, ?)`,
-      [name, price, stock, category_id, admin.id]
+        (name, unit, min_stock, stock, category_id, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, unit, min_stock || 0, stock, category_id, admin.id],
     );
-
-    const productId = result.insertId;
-
-    // 3️⃣ insert relasi product ↔ companies
-    if (Array.isArray(company_ids) && company_ids.length > 0) {
-      const values = company_ids.map((companyId) => [productId, companyId]);
-
-      await conn.query(
-        `INSERT INTO product_companies (product_id, company_id)
-         VALUES ?`,
-        [values]
-      );
-    }
-
-    await conn.commit();
 
     res.status(201).json({
       message: "Product created successfully",
-      product_id: productId,
+      product_id: result.insertId,
     });
   } catch (error) {
-    await conn.rollback();
     console.error(error);
-
-    res.status(500).json({
-      message: "Failed to create product",
-    });
-  } finally {
-    conn.release();
+    res.status(500).json({ message: "Failed to create product" });
   }
 };
 
@@ -79,8 +45,10 @@ export const getProducts = async (req, res) => {
       SELECT
         p.id,
         p.name,
-        p.price,
+        p.unit,
         p.stock,
+        p.min_stock,
+        (p.stock <= p.min_stock) AS is_low_stock,
         c.name AS category,
         a.name AS created_by,
         p.created_at
@@ -93,9 +61,7 @@ export const getProducts = async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      message: "Failed to fetch products",
-    });
+    res.status(500).json({ message: "Failed to fetch products" });
   }
 };
 
@@ -104,74 +70,28 @@ export const getProducts = async (req, res) => {
  */
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, price, stock, category_id, company_ids } = req.body;
+  const { name, unit, min_stock, stock, category_id } = req.body;
 
-  if (
-    !name ||
-    price === undefined ||
-    stock === undefined ||
-    category_id === undefined
-  ) {
-    return res.status(400).json({
-      message: "Required fields are missing",
-    });
+  if (!name || !unit || stock === undefined || !category_id) {
+    return res.status(400).json({ message: "Required fields are missing" });
   }
 
-  const conn = await pool.getConnection();
-
   try {
-    await conn.beginTransaction();
-
-    // 1️⃣ cek product exist
-    const [[product]] = await conn.query(
-      `SELECT id FROM products WHERE id = ?`,
-      [id]
-    );
-
-    if (!product) {
-      await conn.rollback();
-      return res.status(404).json({
-        message: "Product not found",
-      });
-    }
-
-    // 2️⃣ update product
-    await conn.query(
+    const [result] = await pool.query(
       `UPDATE products 
-       SET name = ?, price = ?, stock = ?, category_id = ?
+       SET name = ?, unit = ?, min_stock = ?, stock = ?, category_id = ?
        WHERE id = ?`,
-      [name, price, stock, category_id, id]
+      [name, unit, min_stock || 0, stock, category_id, id],
     );
 
-    // 3️⃣ update relasi companies (reset & insert ulang)
-    if (Array.isArray(company_ids)) {
-      await conn.query(`DELETE FROM product_companies WHERE product_id = ?`, [
-        id,
-      ]);
-
-      if (company_ids.length > 0) {
-        const values = company_ids.map((cid) => [id, cid]);
-        await conn.query(
-          `INSERT INTO product_companies (product_id, company_id)
-           VALUES ?`,
-          [values]
-        );
-      }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    await conn.commit();
-
-    res.json({
-      message: "Product updated successfully",
-    });
+    res.json({ message: "Product updated successfully" });
   } catch (error) {
-    await conn.rollback();
     console.error(error);
-    res.status(500).json({
-      message: "Failed to update product",
-    });
-  } finally {
-    conn.release();
+    res.status(500).json({ message: "Failed to update product" });
   }
 };
 
@@ -181,44 +101,18 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
 
-  const conn = await pool.getConnection();
-
   try {
-    await conn.beginTransaction();
-
-    // 1️⃣ cek product
-    const [[product]] = await conn.query(
-      `SELECT id FROM products WHERE id = ?`,
-      [id]
-    );
-
-    if (!product) {
-      await conn.rollback();
-      return res.status(404).json({
-        message: "Product not found",
-      });
-    }
-
-    // 2️⃣ hapus relasi
-    await conn.query(`DELETE FROM product_companies WHERE product_id = ?`, [
+    const [result] = await pool.query(`DELETE FROM products WHERE id = ?`, [
       id,
     ]);
 
-    // 3️⃣ hapus product
-    await conn.query(`DELETE FROM products WHERE id = ?`, [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
 
-    await conn.commit();
-
-    res.json({
-      message: "Product deleted successfully",
-    });
+    res.json({ message: "Product deleted successfully" });
   } catch (error) {
-    await conn.rollback();
     console.error(error);
-    res.status(500).json({
-      message: "Failed to delete product",
-    });
-  } finally {
-    conn.release();
+    res.status(500).json({ message: "Failed to delete product" });
   }
 };

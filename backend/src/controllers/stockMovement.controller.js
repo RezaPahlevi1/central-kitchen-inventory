@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { recordStockMovement } from "../../services/stock.service.js";
 
 export const transferStock = async (req, res) => {
   const { product_id, outlet_id, qty, note } = req.body;
@@ -34,19 +35,30 @@ export const transferStock = async (req, res) => {
       throw new Error("Stok tidak mencukupi");
     }
 
-    // kurangi stok central kitchen
-    await conn.query(`UPDATE products SET stock = stock - ? WHERE id = ?`, [
-      qty,
-      product_id,
-    ]);
+    // // kurangi stok central kitchen
+    // await conn.query(`UPDATE products SET stock = stock - ? WHERE id = ?`, [
+    //   qty,
+    //   product_id,
+    // ]);
 
-    // insert stock movement
-    await conn.query(
-      `INSERT INTO stock_movements
-       (product_id, outlet_id, qty, direction, movement_type, note, created_by)
-       VALUES (?, ?, ?, 'OUT', 'TRANSFER', ?, ?)`,
-      [product_id, outlet_id, qty, note, admin.id],
-    );
+    // // insert stock movement
+    // await conn.query(
+    //   `INSERT INTO stock_movements
+    //    (product_id, outlet_id, qty, direction, movement_type, note, created_by)
+    //    VALUES (?, ?, ?, 'OUT', 'TRANSFER', ?, ?)`,
+    //   [product_id, outlet_id, qty, note, admin.id],
+    // );
+
+    await recordStockMovement({
+      conn,
+      product_id,
+      outlet_id,
+      qty,
+      direction: "OUT",
+      movement_type: "TRANSFER",
+      note,
+      admin_id: admin.id,
+    });
 
     await conn.commit();
     res.json({ message: "Stock berhasil ditransfer" });
