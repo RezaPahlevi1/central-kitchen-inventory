@@ -59,9 +59,36 @@ export const createProduct = async (req, res) => {
 /**
  * GET /api/products
  */
+// export const getProducts = async (req, res) => {
+//   try {
+//     const [rows] = await pool.query(`
+//       SELECT
+//         p.id,
+//         p.name,
+//         p.unit,
+//         p.stock,
+//         p.min_stock,
+//         (p.stock <= p.min_stock) AS is_low_stock,
+//         c.name AS category,
+//         a.name AS created_by,
+//         p.created_at
+//       FROM products p
+//       JOIN categories c ON p.category_id = c.id
+//       JOIN admins a ON p.created_by = a.id
+//       ORDER BY p.created_at DESC
+//     `);
+
+//     res.json(rows);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Failed to fetch products" });
+//   }
+// };
 export const getProducts = async (req, res) => {
+  const { search } = req.query;
+
   try {
-    const [rows] = await pool.query(`
+    let sql = `
       SELECT
         p.id,
         p.name,
@@ -75,8 +102,18 @@ export const getProducts = async (req, res) => {
       FROM products p
       JOIN categories c ON p.category_id = c.id
       JOIN admins a ON p.created_by = a.id
-      ORDER BY p.created_at DESC
-    `);
+    `;
+
+    const params = [];
+
+    if (search) {
+      sql += ` WHERE p.name LIKE ? `;
+      params.push(`%${search}%`);
+    }
+
+    sql += ` ORDER BY p.created_at DESC`;
+
+    const [rows] = await pool.query(sql, params);
 
     res.json(rows);
   } catch (error) {

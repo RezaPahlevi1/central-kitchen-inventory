@@ -2,8 +2,10 @@ import api from "./axios";
 
 export const createProduct = (data) => api.post("/products", data);
 
-export const getProducts = async () => {
-  const res = await api.get("/products");
+export const getProducts = async (search = "") => {
+  const res = await api.get("/products", {
+    params: { search },
+  });
   return res.data;
 };
 

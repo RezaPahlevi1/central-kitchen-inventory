@@ -4,11 +4,16 @@ import { getProducts, updateProduct, deleteProduct } from "../api/product.api";
 import { getCategories } from "../api/category.api";
 import { Link } from "react-router-dom";
 import Loading from "../components/Loading";
+import SearchInput from "../components/SearchInput";
+import useDebounce from "../hooks/useDebounce";
 
 export default function Products() {
   const queryClient = useQueryClient();
 
   const [openModal, setOpenModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+
   const [form, setForm] = useState({
     id: null,
     name: "",
@@ -24,8 +29,8 @@ export default function Products() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["products"],
-    queryFn: getProducts,
+    queryKey: ["products", debouncedSearch],
+    queryFn: () => getProducts(debouncedSearch),
   });
 
   // CATEGORIES (buat dropdown)
@@ -81,7 +86,13 @@ export default function Products() {
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">Products</h1>
-      <span>test</span>
+
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder="Search product..."
+      />
+
       <table className="w-full border">
         <thead>
           <tr className="border-b">
