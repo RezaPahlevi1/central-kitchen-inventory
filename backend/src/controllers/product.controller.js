@@ -96,6 +96,7 @@ export const getProducts = async (req, res) => {
         p.stock,
         p.min_stock,
         (p.stock <= p.min_stock) AS is_low_stock,
+        p.category_id,
         c.name AS category,
         a.name AS created_by,
         p.created_at
