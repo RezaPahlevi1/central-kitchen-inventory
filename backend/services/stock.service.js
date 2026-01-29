@@ -8,25 +8,43 @@ export const recordStockMovement = async ({
   note = null,
   admin_id,
 }) => {
-  // update stock
-  if (direction === "OUT") {
-    await conn.query(`UPDATE products SET stock = stock - ? WHERE id = ?`, [
-      qty,
-      product_id,
-    ]);
+  if (!conn) {
+    throw new Error("DB Connection is required");
   }
 
-  if (direction === "IN") {
-    await conn.query(`UPDATE products SET stock = stock + ? WHERE id = ?`, [
-      qty,
-      product_id,
-    ]);
+  if (qty <= 0) {
+    throw new Error("Qty harus lebih dari 0");
   }
 
-  // insert log
+  // Lock product row
+  const [[product]] = await conn.query(
+    `SELECT stock FROM products WHERE id = ? FOR UPDATE`,
+    [product_id],
+  );
+
+  if (!product) {
+    throw new Error("Product tidak ditemukan");
+  }
+
+  // Validasi stok
+  if (direction === "OUT" && product.stock < qty) {
+    throw new Error("Stok tidak mencukupi");
+  }
+
+  // Update stock
+  const operator = direction === "IN" ? "+" : "-";
+
+  await conn.query(
+    `UPDATE products 
+     SET stock = stock ${operator} ? 
+     WHERE id = ?`,
+    [qty, product_id],
+  );
+
+  // Insert ledger
   await conn.query(
     `INSERT INTO stock_movements
-     (product_id, outlet_id, qty, direction, movement_type, note, created_by)
+      (product_id, outlet_id, qty, direction, movement_type, note, created_by)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [product_id, outlet_id, qty, direction, movement_type, note, admin_id],
   );

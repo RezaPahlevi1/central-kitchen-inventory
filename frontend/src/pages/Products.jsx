@@ -65,7 +65,7 @@ export default function Products() {
       unit: p.unit,
       min_stock: p.min_stock,
       stock: p.stock,
-      category_id: p.category_id,
+      category_id: String(p.category_id || ""),
     });
     setOpenModal(true);
   };

@@ -149,9 +149,13 @@ export const updateProduct = async (req, res) => {
 
     await conn.query(
       `UPDATE products 
-       SET name=?, unit=?, min_stock=?, category_id=?
-       WHERE id=?`,
-      [name, unit, min_stock || 0, category_id, id],
+   SET 
+     name=?, 
+     unit=?, 
+     min_stock=?, 
+     category_id=COALESCE(?, category_id)
+   WHERE id=?`,
+      [name, unit, min_stock || 0, category_id || null, id],
     );
 
     const diff = stock - oldProduct.stock;
