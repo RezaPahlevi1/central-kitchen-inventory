@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { getLowStock } from "../controllers/dashboard.controller.js";
+import { getDashboard } from "../controllers/dashboard.controller.js";
 
 const router = Router();
 
-router.get("/", getLowStock);
+router.get("/", getDashboard);
 
 export default router;

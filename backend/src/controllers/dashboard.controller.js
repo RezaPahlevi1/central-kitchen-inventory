@@ -1,7 +1,8 @@
 import pool from "../config/db.js";
 
-export const getLowStock = async (req, res) => {
+export const getDashboard = async (req, res) => {
   try {
+    // LOW STOCK
     const [lowStockProducts] = await pool.query(`
       SELECT
         id,
@@ -13,8 +14,21 @@ export const getLowStock = async (req, res) => {
       ORDER BY stock ASC
     `);
 
+    // TODAY MOVEMENT
+    const [[todayMovement]] = await pool.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN direction='IN' THEN qty END),0) AS todayIn,
+        COALESCE(SUM(CASE WHEN direction='OUT' THEN qty END),0) AS todayOut
+      FROM stock_movements
+      WHERE DATE(created_at) = CURDATE()
+    `);
+
     res.json({
       lowStockProducts,
+      todayMovement: {
+        todayIn: todayMovement.todayIn,
+        todayOut: todayMovement.todayOut,
+      },
     });
   } catch (error) {
     console.error(error);
