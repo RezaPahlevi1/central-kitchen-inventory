@@ -1,3 +1,6 @@
 import api from "./axios";
 
-export const getDashboard = () => api.get("/dashboard").then((res) => res.data);
+export const getDashboard = async (days = 7) => {
+  const res = await api.get(`/dashboard?days=${days}`);
+  return res.data;
+};

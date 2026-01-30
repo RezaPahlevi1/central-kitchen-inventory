@@ -2,6 +2,22 @@ import pool from "../config/db.js";
 
 export const getDashboard = async (req, res) => {
   try {
+    const days = Number(req.query.days) || 7;
+
+    const [movementChart] = await pool.query(
+      `
+      SELECT 
+        DATE(created_at) as date,
+        SUM(CASE WHEN direction='IN' THEN qty ELSE 0 END) as totalIn,
+        SUM(CASE WHEN direction='OUT' THEN qty ELSE 0 END) as totalOut
+      FROM stock_movements
+      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at)
+      `,
+      [days],
+    );
+
     // LOW STOCK
     const [lowStockProducts] = await pool.query(`
       SELECT
@@ -29,6 +45,7 @@ export const getDashboard = async (req, res) => {
         todayIn: todayMovement.todayIn,
         todayOut: todayMovement.todayOut,
       },
+      movementChart,
     });
   } catch (error) {
     console.error(error);
