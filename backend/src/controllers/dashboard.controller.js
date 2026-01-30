@@ -39,6 +39,20 @@ export const getDashboard = async (req, res) => {
       WHERE DATE(created_at) = CURDATE()
     `);
 
+    const [recentMovements] = await pool.query(`
+       SELECT 
+        p.name,
+        sm.qty,
+        sm.direction,
+        sm.created_at,
+        o.name AS outlet_name
+      FROM stock_movements sm
+      JOIN products p ON p.id = sm.product_id
+      LEFT JOIN outlets o ON o.id = sm.outlet_id
+      ORDER BY sm.created_at DESC
+      LIMIT 5;
+      `);
+
     res.json({
       lowStockProducts,
       todayMovement: {
@@ -46,6 +60,7 @@ export const getDashboard = async (req, res) => {
         todayOut: todayMovement.todayOut,
       },
       movementChart,
+      recentMovements,
     });
   } catch (error) {
     console.error(error);
