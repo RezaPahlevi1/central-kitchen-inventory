@@ -3,14 +3,14 @@ import { getDashboard } from "../api/dashboard.api";
 import Loading from "../components/Loading";
 
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from "recharts";
 import { useState } from "react";
 
@@ -49,11 +49,9 @@ export default function Dashboard() {
       </div>
 
       <div className="mb-6 border rounded p-4">
-        <h2 className="font-bold mb-4">Stock Movement (Last 7 Days)</h2>
-
         <div style={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer>
-            <LineChart data={movementChart}>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={movementChart}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
@@ -67,19 +65,23 @@ export default function Dashboard() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line
+
+              <Area
                 type="monotone"
                 dataKey="totalIn"
                 stroke="#22c55e"
-                strokeWidth={2}
+                fill="#bbf7d0"
+                name="Total IN"
               />
-              <Line
+
+              <Area
                 type="monotone"
                 dataKey="totalOut"
                 stroke="#ef4444"
-                strokeWidth={2}
+                fill="#fecaca"
+                name="Total OUT"
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
