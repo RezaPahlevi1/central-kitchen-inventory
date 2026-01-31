@@ -36,6 +36,10 @@ export default function MainLayout() {
           <NavLink to="/stock-movements/transfer" className={linkClass}>
             Transfer Stock
           </NavLink>
+
+          <NavLink to="/:outlet_id/stocks" className={linkClass}>
+            Outlets
+          </NavLink>
         </nav>
       </aside>
 

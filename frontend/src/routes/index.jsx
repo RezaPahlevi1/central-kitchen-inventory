@@ -7,6 +7,7 @@ import Dashboard from "../pages/Dashboard";
 import TransferStock from "../pages/TransferStock";
 import MainLayout from "../../layouts/MainLayout";
 import StockMovements from "../pages/StockMovements";
+import OutletStock from "../pages/OutletStock";
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
       {
         path: "/stock-movements/transfer",
         element: <TransferStock />,
+      },
+      {
+        path: "/:outlet_id/stocks",
+        element: <OutletStock />,
       },
     ],
   },
