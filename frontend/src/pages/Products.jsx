@@ -5,6 +5,7 @@ import { getCategories } from "../api/category.api";
 import { Link } from "react-router-dom";
 import Loading from "../components/Loading";
 import SearchInput from "../components/SearchInput";
+import Pagination from "../components/Pagination";
 import useDebounce from "../hooks/useDebounce";
 
 export default function Products() {
@@ -12,6 +13,7 @@ export default function Products() {
 
   const [openModal, setOpenModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 500);
 
   const [form, setForm] = useState({
@@ -23,15 +25,17 @@ export default function Products() {
     category_id: "",
   });
 
-  // PRODUCTS
   const {
-    data: products = [],
+    data: productsData,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["products", debouncedSearch],
-    queryFn: () => getProducts(debouncedSearch),
+    queryKey: ["products", debouncedSearch, page],
+    queryFn: () => getProducts(debouncedSearch, page),
   });
+
+  const products = productsData?.data || [];
+  const totalPages = productsData?.totalPages || 1;
 
   // CATEGORIES (buat dropdown)
   const { data: categories = [] } = useQuery({
@@ -80,6 +84,12 @@ export default function Products() {
     deleteMutation.mutate(id);
   };
 
+  // Reset page saat search berubah
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
+
   if (isLoading) return <Loading />;
   if (isError) return <p>Gagal load products</p>;
 
@@ -89,7 +99,7 @@ export default function Products() {
 
       <SearchInput
         value={search}
-        onChange={setSearch}
+        onChange={handleSearchChange}
         placeholder="Search product..."
       />
 
@@ -106,35 +116,52 @@ export default function Products() {
           </tr>
         </thead>
         <tbody>
-          {products.map((p) => (
-            <tr key={p.id} className="border-b">
-              <td className="p-2">{p.name}</td>
-              <td className="p-2">
-                {p.min_stock} {p.unit}
-              </td>
-              <td className="p-2">
-                {p.stock} {p.unit}
-              </td>
-              <td className="p-2">{p.category}</td>
-              <td className="p-2">{p.created_by}</td>
-              <td className="p-2">
-                {new Date(p.created_at).toLocaleDateString()}
-              </td>
-              <td className="p-2 flex gap-2">
-                <button onClick={() => handleEdit(p)} className="text-blue-600">
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  className="text-red-600"
-                >
-                  Delete
-                </button>
+          {products.length === 0 ? (
+            <tr>
+              <td colSpan="7" className="p-8 text-center text-gray-500">
+                Tidak ada data
               </td>
             </tr>
-          ))}
+          ) : (
+            products.map((p) => (
+              <tr key={p.id} className="border-b">
+                <td className="p-2">{p.name}</td>
+                <td className="p-2">
+                  {p.min_stock} {p.unit}
+                </td>
+                <td className="p-2">
+                  {p.stock} {p.unit}
+                </td>
+                <td className="p-2">{p.category}</td>
+                <td className="p-2">{p.created_by}</td>
+                <td className="p-2">
+                  {new Date(p.created_at).toLocaleDateString()}
+                </td>
+                <td className="p-2 flex gap-2">
+                  <button
+                    onClick={() => handleEdit(p)}
+                    className="text-blue-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="text-red-600"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
+
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
 
       <Link
         to="/products/create"

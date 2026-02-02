@@ -36,7 +36,13 @@ export const transferStock = async (req, res) => {
 
 export const getStockMovements = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    // DATA
+    const [rows] = await pool.query(
+      `
       SELECT
         sm.id,
         sm.qty,
@@ -63,20 +69,46 @@ export const getStockMovements = async (req, res) => {
           AND sm.direction='OUT'
         )
       ORDER BY sm.created_at DESC
+      LIMIT ? OFFSET ?
+      `,
+      [limit, offset],
+    );
+
+    // TOTAL COUNT
+    const [[count]] = await pool.query(`
+      SELECT COUNT(*) AS total
+      FROM stock_movements sm
+      WHERE
+        (
+          sm.outlet_id IS NULL
+          AND sm.movement_type IN ('INITIAL','WASTE','ADJUSTMENT')
+        )
+        OR
+        (
+          sm.movement_type='TRANSFER'
+          AND sm.direction='OUT'
+        )
     `);
 
-    res.json(rows);
+    res.json({
+      data: rows,
+      totalPages: Math.ceil(count.total / limit),
+      currentPage: page,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch CK movements" });
   }
 };
 
-// controllers/outlet.controller.js (atau stock.controller.js)
-
 export const getOutletMovements = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const [rows] = await pool.query(
+      `
       SELECT
         sm.id,
         sm.qty,
@@ -96,9 +128,24 @@ export const getOutletMovements = async (req, res) => {
         sm.movement_type = 'TRANSFER'
         AND sm.direction = 'IN'
       ORDER BY sm.created_at DESC
+      LIMIT ? OFFSET ?
+      `,
+      [limit, offset],
+    );
+
+    const [[count]] = await pool.query(`
+      SELECT COUNT(*) AS total
+      FROM stock_movements sm
+      WHERE 
+        sm.movement_type='TRANSFER'
+        AND sm.direction='IN'
     `);
 
-    res.json(rows);
+    res.json({
+      data: rows,
+      totalPages: Math.ceil(count.total / limit),
+      currentPage: page,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to fetch outlet movements" });

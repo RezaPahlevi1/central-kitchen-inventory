@@ -15,7 +15,7 @@ export const createProduct = async (req, res) => {
 
     const [[admin]] = await conn.query(
       `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
     );
 
     if (!admin) throw new Error("Superadmin not found");
@@ -24,7 +24,7 @@ export const createProduct = async (req, res) => {
       `INSERT INTO products 
        (name, unit, min_stock, stock, category_id, created_by)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, unit, min_stock || 0, 0, category_id, admin.id]
+      [name, unit, min_stock || 0, 0, category_id, admin.id],
     );
 
     const product_id = result.insertId;
@@ -56,36 +56,10 @@ export const createProduct = async (req, res) => {
   }
 };
 
-/**
- * GET /api/products
- */
-// export const getProducts = async (req, res) => {
-//   try {
-//     const [rows] = await pool.query(`
-//       SELECT
-//         p.id,
-//         p.name,
-//         p.unit,
-//         p.stock,
-//         p.min_stock,
-//         (p.stock <= p.min_stock) AS is_low_stock,
-//         c.name AS category,
-//         a.name AS created_by,
-//         p.created_at
-//       FROM products p
-//       JOIN categories c ON p.category_id = c.id
-//       JOIN admins a ON p.created_by = a.id
-//       ORDER BY p.created_at DESC
-//     `);
-
-//     res.json(rows);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Failed to fetch products" });
-//   }
-// };
 export const getProducts = async (req, res) => {
-  const { search } = req.query;
+  const { search, page = 1 } = req.query;
+  const limit = 10;
+  const offset = (parseInt(page) - 1) * limit;
 
   try {
     let sql = `
@@ -101,8 +75,8 @@ export const getProducts = async (req, res) => {
         a.name AS created_by,
         p.created_at
       FROM products p
-      JOIN categories c ON p.category_id = c.id
-      JOIN admins a ON p.created_by = a.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN admins a ON p.created_by = a.id
     `;
 
     const params = [];
@@ -112,11 +86,31 @@ export const getProducts = async (req, res) => {
       params.push(`%${search}%`);
     }
 
-    sql += ` ORDER BY p.created_at DESC`;
+    sql += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
 
     const [rows] = await pool.query(sql, params);
 
-    res.json(rows);
+    // COUNT TOTAL
+    let countSql = `
+      SELECT COUNT(*) AS total
+      FROM products p
+    `;
+
+    const countParams = [];
+
+    if (search) {
+      countSql += ` WHERE p.name LIKE ? `;
+      countParams.push(`%${search}%`);
+    }
+
+    const [[count]] = await pool.query(countSql, countParams);
+
+    res.json({
+      data: rows,
+      totalPages: Math.ceil(count.total / limit),
+      currentPage: parseInt(page),
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch products" });
@@ -138,12 +132,12 @@ export const updateProduct = async (req, res) => {
 
     const [[admin]] = await conn.query(
       `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
     );
 
     const [[oldProduct]] = await conn.query(
       `SELECT stock FROM products WHERE id=? FOR UPDATE`,
-      [id]
+      [id],
     );
 
     if (!oldProduct) throw new Error("Product not found");
@@ -156,7 +150,7 @@ export const updateProduct = async (req, res) => {
      min_stock=?, 
      category_id=COALESCE(?, category_id)
    WHERE id=?`,
-      [name, unit, min_stock || 0, category_id || null, id]
+      [name, unit, min_stock || 0, category_id || null, id],
     );
 
     const diff = stock - oldProduct.stock;
@@ -197,12 +191,12 @@ export const deleteProduct = async (req, res) => {
 
     const [[admin]] = await conn.query(
       `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
     );
 
     const [[product]] = await conn.query(
       `SELECT stock FROM products WHERE id=? FOR UPDATE`,
-      [id]
+      [id],
     );
 
     if (!product) throw new Error("Product not found");

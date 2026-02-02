@@ -5,26 +5,31 @@ import {
   getOutletMovements,
 } from "../api/stockMovement.api";
 import Loading from "../components/Loading";
+import Pagination from "../components/Pagination";
 
 export default function StockMovements() {
-  // State untuk Tab: 'CENTRAL' atau 'OUTLET'
   const [activeTab, setActiveTab] = useState("CENTRAL");
+  const [page, setPage] = useState(1);
 
-  // Query 1: Data Central Kitchen
-  const { data: ckData = [], isLoading: ckLoading } = useQuery({
-    queryKey: ["stock-movements", "central"],
+  const { data: ckData, isLoading: ckLoading } = useQuery({
+    queryKey: ["stock-movements", "central", page],
     queryFn: getStockMovements,
   });
 
-  // Query 2: Data Outlet
-  const { data: outletData = [], isLoading: outletLoading } = useQuery({
-    queryKey: ["stock-movements", "outlet"],
+  const { data: outletData, isLoading: outletLoading } = useQuery({
+    queryKey: ["stock-movements", "outlet", page],
     queryFn: getOutletMovements,
   });
 
-  // Tentukan data dan loading state mana yang dipakai berdasarkan Tab Aktif
-  const data = activeTab === "CENTRAL" ? ckData : outletData;
+  const data =
+    activeTab === "CENTRAL" ? ckData?.data || [] : outletData?.data || [];
+
   const isLoading = activeTab === "CENTRAL" ? ckLoading : outletLoading;
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setPage(1);
+  };
 
   if (isLoading) return <Loading />;
 
@@ -32,8 +37,6 @@ export default function StockMovements() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Stock Movement Ledger</h1>
-
-        {/* Tombol Export atau Filter bisa ditaruh disini nantinya */}
       </div>
 
       {/* --- TAB NAVIGATION --- */}
@@ -44,7 +47,7 @@ export default function StockMovements() {
               ? "border-b-2 border-blue-600 text-blue-600"
               : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab("CENTRAL")}
+          onClick={() => handleTabChange("CENTRAL")}
         >
           Central Kitchen
         </button>
@@ -54,7 +57,7 @@ export default function StockMovements() {
               ? "border-b-2 border-blue-600 text-blue-600"
               : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab("OUTLET")}
+          onClick={() => handleTabChange("OUTLET")}
         >
           Outlet Movements
         </button>
@@ -72,7 +75,6 @@ export default function StockMovements() {
               <th className="border p-3 text-center">Direction</th>
               <th className="border p-3 text-center">Type</th>
 
-              {/* Kolom Outlet ditampilkan dinamis tergantung Tab */}
               <th className="border p-3 text-left">
                 {activeTab === "CENTRAL"
                   ? "Tujuan/Asal (Outlet)"
@@ -151,6 +153,15 @@ export default function StockMovements() {
           </tbody>
         </table>
       </div>
+      <Pagination
+        currentPage={page}
+        totalPages={
+          activeTab === "CENTRAL"
+            ? ckData?.totalPages || 1
+            : outletData?.totalPages || 1
+        }
+        onPageChange={setPage}
+      />
     </div>
   );
 }
