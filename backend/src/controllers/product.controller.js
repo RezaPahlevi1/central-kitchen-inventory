@@ -15,7 +15,7 @@ export const createProduct = async (req, res) => {
 
     const [[admin]] = await conn.query(
       `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`
     );
 
     if (!admin) throw new Error("Superadmin not found");
@@ -24,7 +24,7 @@ export const createProduct = async (req, res) => {
       `INSERT INTO products 
        (name, unit, min_stock, stock, category_id, created_by)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, unit, min_stock || 0, 0, category_id, admin.id],
+      [name, unit, min_stock || 0, 0, category_id, admin.id]
     );
 
     const product_id = result.insertId;
@@ -138,12 +138,12 @@ export const updateProduct = async (req, res) => {
 
     const [[admin]] = await conn.query(
       `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`
     );
 
     const [[oldProduct]] = await conn.query(
       `SELECT stock FROM products WHERE id=? FOR UPDATE`,
-      [id],
+      [id]
     );
 
     if (!oldProduct) throw new Error("Product not found");
@@ -156,7 +156,7 @@ export const updateProduct = async (req, res) => {
      min_stock=?, 
      category_id=COALESCE(?, category_id)
    WHERE id=?`,
-      [name, unit, min_stock || 0, category_id || null, id],
+      [name, unit, min_stock || 0, category_id || null, id]
     );
 
     const diff = stock - oldProduct.stock;
@@ -197,15 +197,16 @@ export const deleteProduct = async (req, res) => {
 
     const [[admin]] = await conn.query(
       `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
+       WHERE role='superadmin' AND is_active=1 LIMIT 1`
     );
 
     const [[product]] = await conn.query(
       `SELECT stock FROM products WHERE id=? FOR UPDATE`,
-      [id],
+      [id]
     );
 
     if (!product) throw new Error("Product not found");
+    if (!admin) throw new Error("Superadmin not found");
 
     if (product.stock > 0) {
       await recordStockMovement({
@@ -219,6 +220,9 @@ export const deleteProduct = async (req, res) => {
       });
     }
 
+    // Hapus child records dulu (foreign key constraint)
+    await conn.query(`DELETE FROM stock_movements WHERE product_id=?`, [id]);
+    await conn.query(`DELETE FROM outlet_stocks WHERE product_id=?`, [id]);
     await conn.query(`DELETE FROM products WHERE id=?`, [id]);
 
     await conn.commit();
