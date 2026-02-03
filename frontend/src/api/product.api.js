@@ -1,6 +1,9 @@
 import api from "./axios";
 
-export const createProduct = (data) => api.post("/products", data);
+export const createProduct = async (data) => {
+  const res = await api.post("/products", data);
+  return res.data;
+};
 
 export const getProducts = async (search = "", page = 1) => {
   const params = new URLSearchParams();

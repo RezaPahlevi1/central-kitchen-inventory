@@ -1,5 +1,39 @@
 import pool from "../config/db.js";
 
+export const createOutlet = async (req, res) => {
+  const { name, address, is_active = 1 } = req.body;
+  let conn;
+
+  try {
+    if (!name) {
+      return res.status(400).json({ message: "Outlet name wajib diisi" });
+    }
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    await conn.query(
+      `
+      INSERT INTO outlets (name, address, is_active)
+      VALUES (?, ?, ?)
+      `,
+      [name, address || null, is_active],
+    );
+
+    await conn.commit();
+
+    res.json({
+      message: "Outlet berhasil ditambahkan",
+    });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
+};
+
 export const getOutlets = async (req, res) => {
   try {
     const [rows] = await pool.query(

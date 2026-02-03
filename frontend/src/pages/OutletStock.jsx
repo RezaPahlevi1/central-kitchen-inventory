@@ -1,10 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { getOutlets, getOutletStocks } from "../api/outlet.api";
+import { getOutlets, getOutletStocks, createOutlet } from "../api/outlet.api";
 import Loading from "../components/Loading";
 
 export default function OutletStock() {
+  const queryClient = useQueryClient();
+
   const [selectedOutlet, setSelectedOutlet] = useState("");
+  const [openModal, setOpenModal] = useState(false); // ← State modal
+
+  // ← Form state untuk create
+  const [form, setForm] = useState({
+    name: "",
+    address: "",
+  });
 
   const { data: outlets = [] } = useQuery({
     queryKey: ["outlets"],
@@ -17,9 +26,48 @@ export default function OutletStock() {
     enabled: !!selectedOutlet,
   });
 
+  // ← CREATE MUTATION
+  const createMutation = useMutation({
+    mutationFn: createOutlet,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["outlets"]);
+      setOpenModal(false);
+      setForm({ name: "", address: "" });
+      alert("Outlet berhasil dibuat!");
+    },
+    onError: () => {
+      alert("Gagal membuat outlet");
+    },
+  });
+
+  const handleCreate = (e) => {
+    e.preventDefault();
+
+    if (!form.name.trim()) {
+      alert("Nama outlet wajib diisi");
+      return;
+    }
+
+    createMutation.mutate(form);
+  };
+
+  const handleOpenModal = () => {
+    setForm({ name: "", address: "" });
+    setOpenModal(true);
+  };
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Outlet Stocks</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Outlet Stocks</h1>
+
+        <button
+          onClick={handleOpenModal}
+          className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+        >
+          + Create Outlet
+        </button>
+      </div>
 
       {/* DROPDOWN */}
       <select
@@ -99,6 +147,59 @@ export default function OutletStock() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {openModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 w-96 rounded shadow-lg">
+            <h2 className="font-bold text-lg mb-4">Create New Outlet</h2>
+
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Nama Outlet <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className="border p-2 w-full rounded"
+                  placeholder="Contoh: Outlet Cabang A"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Alamat</label>
+                <textarea
+                  className="border p-2 w-full rounded"
+                  placeholder="Alamat outlet (opsional)"
+                  rows="3"
+                  value={form.address}
+                  onChange={(e) =>
+                    setForm({ ...form, address: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setOpenModal(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending ? "Creating..." : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
