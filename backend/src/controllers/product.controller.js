@@ -1,6 +1,30 @@
 import pool from "../config/db.js";
 import { recordStockMovement } from "../../services/stock.service.js";
 
+export const getAllProducts = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        p.id,
+        p.name,
+        p.unit,
+        p.stock,
+        p.min_stock,
+        p.category_id,
+        c.name AS category
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.stock > 0
+      ORDER BY p.name ASC
+    `);
+
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+};
+
 /**
  * POST /api/products
  */

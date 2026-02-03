@@ -10,6 +10,11 @@ export const createOutlet = async (data) => {
   return res.data;
 };
 
+export const deleteOutlet = async (id) => {
+  const res = await api.delete(`/outlets/${id}`);
+  return res.data;
+};
+
 export const getOutletStocks = async (outletId) => {
   const res = await api.get(`/outlets/${outletId}/stocks`);
   return res.data;

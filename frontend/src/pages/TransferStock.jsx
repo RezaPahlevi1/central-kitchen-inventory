@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { transferStock } from "../api/stockMovement.api";
-import { getProducts } from "../api/product.api";
+import { getAllProducts, getProducts } from "../api/product.api";
 import { getOutlets } from "../api/outlet.api";
 
 export default function TransferStock() {
@@ -15,8 +15,8 @@ export default function TransferStock() {
   const [message, setMessage] = useState("");
 
   const { data: products = [] } = useQuery({
-    queryKey: ["products"],
-    queryFn: getProducts,
+    queryKey: ["products-all"],
+    queryFn: getAllProducts,
   });
 
   const { data: outlets = [] } = useQuery({

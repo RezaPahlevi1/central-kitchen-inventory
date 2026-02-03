@@ -40,7 +40,7 @@ export const getStockMovements = async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    // DATA
+    // DATA - LEFT JOIN tetap bisa ambil deleted outlets
     const [rows] = await pool.query(
       `
       SELECT
@@ -53,6 +53,7 @@ export const getStockMovements = async (req, res) => {
         p.name AS product_name,
         p.unit,
         o.name AS outlet_name,
+        o.is_active AS outlet_is_active,
         a.name AS created_by
       FROM stock_movements sm
       JOIN products p ON sm.product_id = p.id
@@ -119,10 +120,11 @@ export const getOutletMovements = async (req, res) => {
         p.name AS product_name,
         p.unit,
         o.name AS outlet_name,
+        o.is_active AS outlet_is_active,
         a.name AS created_by
       FROM stock_movements sm
       JOIN products p ON sm.product_id = p.id
-      JOIN outlets o ON sm.outlet_id = o.id
+      LEFT JOIN outlets o ON sm.outlet_id = o.id
       JOIN admins a ON sm.created_by = a.id
       WHERE 
         sm.movement_type = 'TRANSFER'

@@ -34,17 +34,52 @@ export const createOutlet = async (req, res) => {
   }
 };
 
+// Update getOutlets - filter only active outlets
 export const getOutlets = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, name FROM outlets ORDER BY name ASC",
+      `SELECT * FROM outlets WHERE is_active = 1 ORDER BY name`,
     );
     res.json(rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      message: "Failed to fetch outlets",
-    });
+    res.status(500).json({ message: "Failed to fetch outlets" });
+  }
+};
+
+// NEW: Soft Delete Outlet
+export const deleteOutlet = async (req, res) => {
+  const { id } = req.params;
+  let conn;
+
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    // Check if outlet exists and is active
+    const [[outlet]] = await conn.query(
+      `SELECT * FROM outlets WHERE id = ? AND is_active = 1`,
+      [id],
+    );
+
+    if (!outlet) {
+      return res.status(404).json({ message: "Outlet tidak ditemukan" });
+    }
+
+    // Soft delete outlet
+    await conn.query(`UPDATE outlets SET is_active = 0 WHERE id = ?`, [id]);
+
+    // Delete physical stocks (karena outlet sudah tidak ada)
+    await conn.query(`DELETE FROM outlet_stocks WHERE outlet_id = ?`, [id]);
+
+    await conn.commit();
+    res.json({ message: "Outlet berhasil dihapus" });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  } finally {
+    if (conn) conn.release();
   }
 };
 

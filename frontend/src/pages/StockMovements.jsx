@@ -140,7 +140,20 @@ export default function StockMovements() {
                     </span>
                   </td>
 
-                  <td className="border p-3">{m.outlet_name || "-"}</td>
+                  <td className="border p-3">
+                    {m.outlet_name ? (
+                      <>
+                        {m.outlet_name}
+                        {m.outlet_is_active === 0 && (
+                          <span className="ml-2 text-xs text-gray-400 italic">
+                            (Deleted)
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
 
                   <td className="border p-3">{m.created_by}</td>
 

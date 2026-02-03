@@ -1,15 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { getOutlets, getOutletStocks, createOutlet } from "../api/outlet.api";
+import {
+  getOutlets,
+  getOutletStocks,
+  createOutlet,
+  deleteOutlet, // ← Import
+} from "../api/outlet.api";
 import Loading from "../components/Loading";
 
 export default function OutletStock() {
   const queryClient = useQueryClient();
 
   const [selectedOutlet, setSelectedOutlet] = useState("");
-  const [openModal, setOpenModal] = useState(false); // ← State modal
+  const [openModal, setOpenModal] = useState(false);
 
-  // ← Form state untuk create
   const [form, setForm] = useState({
     name: "",
     address: "",
@@ -26,7 +30,7 @@ export default function OutletStock() {
     enabled: !!selectedOutlet,
   });
 
-  // ← CREATE MUTATION
+  // CREATE MUTATION
   const createMutation = useMutation({
     mutationFn: createOutlet,
     onSuccess: () => {
@@ -37,6 +41,19 @@ export default function OutletStock() {
     },
     onError: () => {
       alert("Gagal membuat outlet");
+    },
+  });
+
+  // DELETE MUTATION ← TAMBAH INI
+  const deleteMutation = useMutation({
+    mutationFn: deleteOutlet,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["outlets"]);
+      setSelectedOutlet(""); // Reset selection
+      alert("Outlet berhasil dihapus");
+    },
+    onError: () => {
+      alert("Gagal menghapus outlet");
     },
   });
 
@@ -56,6 +73,18 @@ export default function OutletStock() {
     setOpenModal(true);
   };
 
+  // ← TAMBAH FUNCTION DELETE
+  const handleDelete = (id, name) => {
+    if (
+      !confirm(
+        `Yakin hapus outlet "${name}"?\n\nStok di outlet akan hilang, tapi riwayat transfer tetap tersimpan.`,
+      )
+    ) {
+      return;
+    }
+    deleteMutation.mutate(id);
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
@@ -69,19 +98,36 @@ export default function OutletStock() {
         </button>
       </div>
 
-      {/* DROPDOWN */}
-      <select
-        className="border px-3 py-2 rounded mb-4"
-        value={selectedOutlet}
-        onChange={(e) => setSelectedOutlet(e.target.value)}
-      >
-        <option value="">Select Outlet</option>
-        {outlets.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-          </option>
-        ))}
-      </select>
+      {/* ← UPDATE DROPDOWN DENGAN DELETE BUTTON */}
+      <div className="flex gap-2 mb-4">
+        <select
+          className="border px-3 py-2 rounded flex-1"
+          value={selectedOutlet}
+          onChange={(e) => setSelectedOutlet(e.target.value)}
+        >
+          <option value="">Select Outlet</option>
+          {outlets.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Delete Button - hanya muncul jika ada outlet yang dipilih */}
+        {selectedOutlet && (
+          <button
+            onClick={() => {
+              const outlet = outlets.find(
+                (o) => o.id === parseInt(selectedOutlet),
+              );
+              if (outlet) handleDelete(outlet.id, outlet.name);
+            }}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Delete Outlet
+          </button>
+        )}
+      </div>
 
       {!selectedOutlet && <p className="text-gray-500">Select outlet first</p>}
 
@@ -114,12 +160,10 @@ export default function OutletStock() {
                     <tr key={p.product_id}>
                       <td className="border p-2">{p.product_name}</td>
 
-                      {/* QTY + UNIT */}
                       <td className="border p-2 text-center font-semibold">
                         {p.stock} {p.unit}
                       </td>
 
-                      {/* DIRECTION */}
                       <td
                         className={`border p-2 text-center font-semibold ${
                           isIn ? "text-green-600" : "text-red-600"
@@ -128,7 +172,6 @@ export default function OutletStock() {
                         {p.last_direction || "-"}
                       </td>
 
-                      {/* DATE */}
                       <td className="border p-2 text-center text-sm text-gray-600">
                         {p.last_update
                           ? new Date(p.last_update).toLocaleDateString(

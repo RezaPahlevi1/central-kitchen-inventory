@@ -5,6 +5,11 @@ export const createProduct = async (data) => {
   return res.data;
 };
 
+export const getAllProducts = async () => {
+  const response = await api.get("/products/all");
+  return response.data;
+};
+
 export const getProducts = async (search = "", page = 1) => {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
