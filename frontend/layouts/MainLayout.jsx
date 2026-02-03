@@ -7,12 +7,12 @@ export default function MainLayout() {
     }`;
 
   return (
-    <div className="flex min-h-screen">
-      {/* SIDEBAR */}
-      <aside className="w-64 border-r bg-white p-4">
+    <div className="flex h-screen overflow-hidden">
+      {/* SIDEBAR - Fixed, no scroll */}
+      <aside className="w-64 border-r bg-white p-4 flex flex-col overflow-y-auto">
         <h1 className="text-xl font-bold mb-6">Inventory</h1>
 
-        <nav className="space-y-2">
+        <nav className="space-y-2 flex-1">
           <NavLink to="/dashboard" className={linkClass}>
             Dashboard
           </NavLink>
@@ -43,8 +43,8 @@ export default function MainLayout() {
         </nav>
       </aside>
 
-      {/* CONTENT */}
-      <main className="flex-1 bg-gray-50">
+      {/* CONTENT - Scrollable */}
+      <main className="flex-1 bg-gray-50 overflow-y-auto">
         <Outlet />
       </main>
     </div>
