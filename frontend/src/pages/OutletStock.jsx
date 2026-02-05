@@ -4,9 +4,10 @@ import {
   getOutlets,
   getOutletStocks,
   createOutlet,
-  deleteOutlet, // ← Import
+  deleteOutlet,
 } from "../api/outlet.api";
 import Loading from "../components/Loading";
+import { useEffect } from "react";
 
 export default function OutletStock() {
   const queryClient = useQueryClient();
@@ -30,7 +31,6 @@ export default function OutletStock() {
     enabled: !!selectedOutlet,
   });
 
-  // CREATE MUTATION
   const createMutation = useMutation({
     mutationFn: createOutlet,
     onSuccess: () => {
@@ -44,12 +44,11 @@ export default function OutletStock() {
     },
   });
 
-  // DELETE MUTATION ← TAMBAH INI
   const deleteMutation = useMutation({
     mutationFn: deleteOutlet,
     onSuccess: () => {
       queryClient.invalidateQueries(["outlets"]);
-      setSelectedOutlet(""); // Reset selection
+      setSelectedOutlet("");
       alert("Outlet berhasil dihapus");
     },
     onError: () => {
@@ -73,7 +72,6 @@ export default function OutletStock() {
     setOpenModal(true);
   };
 
-  // ← TAMBAH FUNCTION DELETE
   const handleDelete = (id, name) => {
     if (
       !confirm(
@@ -84,6 +82,12 @@ export default function OutletStock() {
     }
     deleteMutation.mutate(id);
   };
+
+  useEffect(() => {
+    if (outlets.length > 0 && !selectedOutlet) {
+      setSelectedOutlet(outlets[0].id.toString());
+    }
+  }, [outlets]);
 
   return (
     <div className="p-6">
@@ -98,7 +102,6 @@ export default function OutletStock() {
         </button>
       </div>
 
-      {/* ← UPDATE DROPDOWN DENGAN DELETE BUTTON */}
       <div className="flex gap-2 mb-4">
         <select
           className="border px-3 py-2 rounded flex-1"
@@ -113,7 +116,6 @@ export default function OutletStock() {
           ))}
         </select>
 
-        {/* Delete Button - hanya muncul jika ada outlet yang dipilih */}
         {selectedOutlet && (
           <button
             onClick={() => {
