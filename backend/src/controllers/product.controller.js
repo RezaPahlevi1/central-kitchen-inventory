@@ -37,18 +37,18 @@ export const createProduct = async (req, res) => {
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
-    const [[admin]] = await conn.query(
-      `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
-    );
-
-    if (!admin) throw new Error("Superadmin not found");
+    // REMOVED HARDCODED ADMIN CHECK
+    // const [[admin]] = await conn.query(
+    //   `SELECT id FROM admins
+    //    WHERE role='superadmin' AND is_active=1 LIMIT 1`,
+    // );
+    // if (!admin) throw new Error("Superadmin not found");
 
     const [result] = await conn.query(
       `INSERT INTO products 
        (name, unit, min_stock, stock, category_id, created_by)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, unit, min_stock || 0, 0, category_id, admin.id],
+      [name, unit, min_stock || 0, 0, category_id, req.user.id],
     );
 
     const product_id = result.insertId;
@@ -61,7 +61,7 @@ export const createProduct = async (req, res) => {
         qty: stock,
         direction: "IN",
         movement_type: "INITIAL",
-        admin_id: admin.id,
+        admin_id: req.user.id,
         note: "Initial stock",
       });
     }
@@ -154,10 +154,11 @@ export const updateProduct = async (req, res) => {
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
-    const [[admin]] = await conn.query(
-      `SELECT id FROM admins 
-       WHERE role='superadmin' AND is_active=1 LIMIT 1`,
-    );
+    // REMOVED HARDCODED ADMIN CHECK
+    // const [[admin]] = await conn.query(
+    //   `SELECT id FROM admins
+    //    WHERE role='superadmin' AND is_active=1 LIMIT 1`,
+    // );
 
     const [[oldProduct]] = await conn.query(
       `SELECT stock FROM products WHERE id=? FOR UPDATE`,
@@ -186,7 +187,7 @@ export const updateProduct = async (req, res) => {
         qty: Math.abs(diff),
         direction: diff > 0 ? "IN" : "OUT",
         movement_type: "ADJUSTMENT",
-        admin_id: admin.id,
+        admin_id: req.user.id,
         note: "Manual stock adjustment",
       });
     }

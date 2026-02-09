@@ -5,8 +5,11 @@ import {
   getOutletStocks,
   deleteOutlet,
 } from "../controllers/outlet.controller.js";
+import { verifyToken } from "../middleware/auth.middleware.js";
 
 const router = Router();
+
+router.use(verifyToken);
 
 router.get("/", getOutlets);
 router.post("/", createOutlet);

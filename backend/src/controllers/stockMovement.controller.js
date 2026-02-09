@@ -9,9 +9,10 @@ export const transferStock = async (req, res) => {
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
-    const [[admin]] = await conn.query(
-      `SELECT id FROM admins WHERE role='superadmin' AND is_active=1 LIMIT 1`,
-    );
+    // REMOVED HARDCODED ADMIN CHECK
+    // const [[admin]] = await conn.query(
+    //   `SELECT id FROM admins WHERE role='superadmin' AND is_active=1 LIMIT 1`,
+    // );
 
     await recordStockMovement({
       conn,
@@ -21,7 +22,7 @@ export const transferStock = async (req, res) => {
       direction: "OUT",
       movement_type: "TRANSFER",
       note,
-      admin_id: admin.id,
+      admin_id: req.user.id,
     });
 
     await conn.commit();
