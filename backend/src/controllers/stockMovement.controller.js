@@ -9,11 +9,6 @@ export const transferStock = async (req, res) => {
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
-    // REMOVED HARDCODED ADMIN CHECK
-    // const [[admin]] = await conn.query(
-    //   `SELECT id FROM admins WHERE role='superadmin' AND is_active=1 LIMIT 1`,
-    // );
-
     await recordStockMovement({
       conn,
       product_id,
@@ -41,7 +36,6 @@ export const getStockMovements = async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    // DATA - LEFT JOIN tetap bisa ambil deleted outlets
     const [rows] = await pool.query(
       `
       SELECT

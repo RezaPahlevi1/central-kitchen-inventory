@@ -37,7 +37,6 @@ export default function Products() {
   const products = productsData?.data || [];
   const totalPages = productsData?.totalPages || 1;
 
-  // CATEGORIES (buat dropdown)
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,

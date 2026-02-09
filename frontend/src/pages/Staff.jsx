@@ -13,10 +13,12 @@ export default function Staff() {
   });
 
   const fetchStaff = async () => {
+    setError("");
     try {
       const response = await api.get("/users");
       setStaffList(response.data);
     } catch (err) {
+      console.log(err);
       setError("Failed to fetch staff");
     } finally {
       setLoading(false);
@@ -33,6 +35,7 @@ export default function Staff() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     if (!formData.name || !formData.email || !formData.password) return;
 
     try {
@@ -41,26 +44,30 @@ export default function Staff() {
       fetchStaff();
       alert("Staff added successfully");
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to add staff");
+      setError(err.response?.data?.message || "Failed to add staff");
     }
   };
 
   const handleDelete = async (id) => {
+    setError("");
     if (!confirm("Are you sure?")) return;
     try {
       await api.delete(`/users/${id}`);
       fetchStaff();
     } catch (err) {
-      alert("Failed to delete staff");
+      console.log(err);
+      setError("Failed to delete staff");
     }
   };
 
   const handleToggleStatus = async (id) => {
+    setError("");
     try {
       await api.patch(`/users/${id}/status`);
       fetchStaff();
     } catch (err) {
-      alert("Failed to update status");
+      console.log(err);
+      setError("Failed to update status");
     }
   };
 
@@ -70,10 +77,22 @@ export default function Staff() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Staff Management</h1>
 
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 flex justify-between items-center">
+          <span>{error}</span>
+          <button onClick={() => setError("")} className="font-bold">
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* Form Add Staff */}
       <div className="bg-white p-4 rounded shadow mb-8">
         <h2 className="text-lg font-semibold mb-4">Add New Staff</h2>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-4 gap-4"
+        >
           <input
             type="text"
             name="name"

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { transferStock } from "../api/stockMovement.api";
-import { getAllProducts, getProducts } from "../api/product.api";
+import { getAllProducts } from "../api/product.api";
 import { getOutlets } from "../api/outlet.api";
 
 export default function TransferStock() {

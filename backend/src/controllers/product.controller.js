@@ -25,9 +25,6 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
-/**
- * POST /api/products
- */
 export const createProduct = async (req, res) => {
   const { name, unit, min_stock, stock, category_id } = req.body;
 
@@ -36,13 +33,6 @@ export const createProduct = async (req, res) => {
   try {
     conn = await pool.getConnection();
     await conn.beginTransaction();
-
-    // REMOVED HARDCODED ADMIN CHECK
-    // const [[admin]] = await conn.query(
-    //   `SELECT id FROM admins
-    //    WHERE role='superadmin' AND is_active=1 LIMIT 1`,
-    // );
-    // if (!admin) throw new Error("Superadmin not found");
 
     const [result] = await conn.query(
       `INSERT INTO products 
@@ -141,9 +131,6 @@ export const getProducts = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/products/:id
- */
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const { name, unit, min_stock, stock, category_id } = req.body;
@@ -153,12 +140,6 @@ export const updateProduct = async (req, res) => {
   try {
     conn = await pool.getConnection();
     await conn.beginTransaction();
-
-    // REMOVED HARDCODED ADMIN CHECK
-    // const [[admin]] = await conn.query(
-    //   `SELECT id FROM admins
-    //    WHERE role='superadmin' AND is_active=1 LIMIT 1`,
-    // );
 
     const [[oldProduct]] = await conn.query(
       `SELECT stock FROM products WHERE id=? FOR UPDATE`,
@@ -201,10 +182,6 @@ export const updateProduct = async (req, res) => {
     if (conn) conn.release();
   }
 };
-
-/**
- * DELETE /api/products/:id
- */
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
 

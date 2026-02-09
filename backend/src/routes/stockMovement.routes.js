@@ -11,9 +11,7 @@ const router = Router();
 router.use(verifyToken);
 
 router.post("/transfer", transferStock);
-
 router.get("/", getStockMovements);
-
 router.get("/outlet", getOutletMovements);
 
 export default router;

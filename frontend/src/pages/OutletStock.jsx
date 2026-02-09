@@ -7,7 +7,6 @@ import {
   deleteOutlet,
 } from "../api/outlet.api";
 import Loading from "../components/Loading";
-import { useEffect } from "react";
 
 export default function OutletStock() {
   const queryClient = useQueryClient();
@@ -25,10 +24,12 @@ export default function OutletStock() {
     queryFn: getOutlets,
   });
 
+  const activeOutletId = selectedOutlet || outlets[0]?.id?.toString() || "";
+
   const { data: stocks = [], isLoading } = useQuery({
-    queryKey: ["outlet-stocks", selectedOutlet],
-    queryFn: () => getOutletStocks(selectedOutlet),
-    enabled: !!selectedOutlet,
+    queryKey: ["outlet-stocks", activeOutletId],
+    queryFn: () => getOutletStocks(activeOutletId),
+    enabled: !!activeOutletId,
   });
 
   const createMutation = useMutation({
@@ -83,12 +84,6 @@ export default function OutletStock() {
     deleteMutation.mutate(id);
   };
 
-  useEffect(() => {
-    if (outlets.length > 0 && !selectedOutlet) {
-      setSelectedOutlet(outlets[0].id.toString());
-    }
-  }, [outlets]);
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
@@ -105,7 +100,7 @@ export default function OutletStock() {
       <div className="flex gap-2 mb-4">
         <select
           className="border px-3 py-2 rounded flex-1"
-          value={selectedOutlet}
+          value={activeOutletId}
           onChange={(e) => setSelectedOutlet(e.target.value)}
         >
           <option value="">Select Outlet</option>
@@ -116,11 +111,11 @@ export default function OutletStock() {
           ))}
         </select>
 
-        {selectedOutlet && (
+        {activeOutletId && (
           <button
             onClick={() => {
               const outlet = outlets.find(
-                (o) => o.id === parseInt(selectedOutlet),
+                (o) => o.id === parseInt(activeOutletId),
               );
               if (outlet) handleDelete(outlet.id, outlet.name);
             }}
@@ -131,11 +126,11 @@ export default function OutletStock() {
         )}
       </div>
 
-      {!selectedOutlet && <p className="text-gray-500">Select outlet first</p>}
+      {!activeOutletId && <p className="text-gray-500">Select outlet first</p>}
 
       {isLoading && <Loading />}
 
-      {selectedOutlet && !isLoading && (
+      {activeOutletId && !isLoading && (
         <div className="border rounded overflow-hidden">
           <table className="w-full border-collapse">
             <thead className="bg-gray-100">
