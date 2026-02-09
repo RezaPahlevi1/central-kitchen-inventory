@@ -1,22 +1,20 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 import api from "../api/axios";
 
 const AuthContext = createContext(null);
 
+const getInitialUser = () => {
+  const storedUser = localStorage.getItem("user");
+  const token = localStorage.getItem("token");
+
+  if (storedUser && token) {
+    return JSON.parse(storedUser);
+  }
+  return null;
+};
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check local storage on mount
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
+  const [user, setUser] = useState(getInitialUser);
 
   const login = async (email, password) => {
     try {
@@ -41,10 +39,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user");
     setUser(null);
   };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
